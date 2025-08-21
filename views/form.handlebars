@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="/css/style.css">
+  <title>Application Form</title>
+  <style>
+    /* Your CSS styles here */
+  </style>
+  
+</head>
+
+<body>
+  
+  <div class="form-container">
+    <!-- Photo Upload Section - Fixed -->
+    <div class="photo-upload-section">
+      <div class="photo-preview" id="photoPreview" onclick="document.getElementById('candidatePhoto').click()">
+        <div class="placeholder">Click to upload<br>Passport Size Photo<br>(35×45 mm)</div>
+        <img id="previewImage" src="" alt="Preview">
+      </div>
+      
+      <label for="candidatePhoto" class="photo-upload-label">Choose Photo</label>
+      <div class="photo-instructions">
+        Max 2MB • JPG, PNG<br>
+        White background<br>
+        Formal attire
+      </div>
+    </div>
+
+    <!-- Main Form Content -->
+    <div class="form-content">
+      <h2>Application Form</h2>
+      <form action="/submit" method="POST" enctype="multipart/form-data" id="applicationForm">
+
+        <!-- CANDIDATE PHOTO INPUT MUST BE INSIDE THE FORM -->
+        <input type="file" id="candidatePhoto" name="candidate_photo" accept="image/*" required 
+               style="display: none;" class="photo-upload-btn">
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Applicant Name</label>
+            <input type="text" name="applicant_name" required placeholder="Enter full name">
+          </div>
+
+          <div class="form-group">
+            <label>Father Name</label>
+            <input type="text" name="father_name" required placeholder="Enter father's name">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Religion</label>
+            <input type="text" name="religion" required placeholder="Enter religion">
+          </div>
+
+          <div class="form-group">
+            <label>CNIC</label>
+            <input type="text" name="cnic" required placeholder="12345-1234567-1" pattern="[0-9]{5}-[0-9]{7}-[0-9]{1}">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Date of Birth</label>
+            <input type="date" name="dob" required>
+          </div>
+
+          <div class="form-group">
+            <label>Domicile</label>
+            <input type="text" name="domicile" required placeholder="Enter domicile">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Caste</label>
+            <input type="text" name="caste" required placeholder="Enter caste">
+          </div>
+
+          <div class="form-group">
+            <label>CNIC Expiry Date</label>
+            <input type="date" name="cnic_expiry" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Application Form Number</label>
+          <input type="text" name="application_form" required placeholder="Enter application form number">
+        </div>
+
+        <div class="form-group">
+          <label>CNIC Photos (2 files required)</label>
+          <input type="file" name="photos" accept="image/*" multiple required>
+          <div class="file-upload-info">Please upload exactly 2 photos (JPEG, PNG, JPG)</div>
+        </div>
+
+        <div class="form-group">
+          <label>Supporting Documents (Multiple files allowed)</label>
+          <input type="file" name="documents" multiple>
+          <div class="file-upload-info">Upload PDF, DOC, DOCX files (max 10 files)</div>
+        </div>
+
+        <button type="submit">Submit Application</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // public/js/form.js
+document.addEventListener('DOMContentLoaded', function() {
+    // Photo preview functionality
+    const photoInput = document.getElementById('candidatePhoto');
+    const photoPreview = document.getElementById('photoPreview');
+    const previewImage = document.getElementById('previewImage');
+    const placeholder = document.querySelector('.placeholder');
+    const applicationForm = document.getElementById('applicationForm');
+
+    if (!photoInput || !photoPreview || !applicationForm) {
+        console.error('Required elements not found!');
+        return;
+    }
+
+    photoInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            if (file.size > 2 * 1024 * 1024) {
+                alert('File size must be less than 2MB');
+                this.value = '';
+                return;
+            }
+
+            if (!file.type.startsWith('image/')) {
+                alert('Please select an image file');
+                this.value = '';
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewImage.src = e.target.result;
+                previewImage.style.display = 'block';
+                if (placeholder) placeholder.style.display = 'none';
+                photoPreview.classList.add('has-image');
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    // Click to upload functionality
+    photoPreview.addEventListener('click', function(e) {
+        if (e.target !== previewImage) {
+            photoInput.click();
+        }
+    });
+
+    // Form validation
+    applicationForm.addEventListener('submit', function(e) {
+        if (!photoInput.files.length) {
+            e.preventDefault();
+            alert('Please upload a passport size photo.');
+            photoPreview.style.borderColor = '#e74c3c';
+            return;
+        }
+
+        const submitBtn = this.querySelector('button[type="submit"]');
+        submitBtn.textContent = 'Submitting...';
+        submitBtn.disabled = true;
+    });
+
+    console.log('Form JavaScript loaded successfully!');
+});
+  </script>
+</body>
+</html>

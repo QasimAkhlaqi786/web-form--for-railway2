@@ -1,0 +1,159 @@
+<div class="success-container">
+    <h1>✅ Application Submitted Successfully!</h1>
+    
+    <div class="success-info">
+        <div class="photo-preview">
+            {{#if candidate_photo}}
+            <img src="/uploads/{{serialNo}}/{{candidate_photo}}" alt="Candidate Photo" class="candidate-photo">
+            {{/if}}
+            <div class="photo-info">
+                <p><strong>Serial Number:</strong> {{serialNo}}</p>
+                <p><strong>Applicant Name:</strong> {{applicant_name}}</p>
+                <p><strong>Status:</strong> <span class="status-submitted">Submitted</span></p>
+                <p><strong>Date:</strong> {{currentDate}}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="actions">
+        <button onclick="window.print()" class="btn print-btn">🖨️ Print Application</button>
+        <a href="/print/{{serialNo}}" target="_blank" class="btn">📄 Printable Version</a>
+        <a href="/" class="btn">📝 New Application</a>
+        <a href="/application/{{serialNo}}" class="btn">👀 View Details</a>
+    </div>
+
+    <div class="print-instructions">
+        <p>💡 <strong>Printing Tip:</strong> Your photo will appear on the printed form. Use "Save as PDF" for best results.</p>
+    </div>
+</div>
+
+<style>
+.success-container {
+    max-width: 800px;
+    margin: 30px auto;
+    padding: 40px;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 0 30px rgba(0,0,0,0.1);
+}
+
+.photo-preview {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+    padding: 25px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 12px;
+    border-left: 5px solid #28a745;
+}
+
+.candidate-photo {
+    width: 120px;
+    height: 150px;
+    border-radius: 8px;
+    object-fit: cover;
+    border: 4px solid white;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.photo-info {
+    flex: 1;
+}
+
+.photo-info p {
+    margin: 8px 0;
+    font-size: 16px;
+}
+
+.actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin: 30px 0;
+}
+
+.btn {
+    padding: 15px 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+    text-align: center;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+}
+
+.print-btn {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+}
+
+.print-instructions {
+    text-align: center;
+    padding: 15px;
+    background: #fff3cd;
+    border-radius: 8px;
+    border: 1px solid #ffeaa7;
+    color: #856404;
+}
+
+.status-submitted {
+    color: #28a745;
+    font-weight: bold;
+    font-size: 1.1em;
+}
+
+/* Print styles */
+@media print {
+    .success-container {
+        box-shadow: none;
+        padding: 0;
+        margin: 0;
+    }
+    
+    .actions, .print-instructions {
+        display: none;
+    }
+    
+    .photo-preview {
+        background: none;
+        border: 2px solid #000;
+        padding: 20px;
+    }
+    
+    .candidate-photo {
+        border: 2px solid #000;
+        box-shadow: none;
+        width: 100px;
+        height: 120px;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const now = new Date();
+    const formattedDate = now.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+    
+    const dateElement = document.querySelector('.photo-info p:last-child');
+    if (dateElement) {
+        dateElement.innerHTML = `<strong>Date:</strong> ${formattedDate}`;
+    }
+});
+</script>

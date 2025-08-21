@@ -1,0 +1,110 @@
+<div class="application-details">
+    <h1>Application Details: {{application.serial_no}}</h1>
+    
+    <div class="applicant-info">
+        <h2>Personal Information</h2>
+        <p><strong>Name:</strong> {{application.applicant_name}}</p>
+        <p><strong>Father's Name:</strong> {{application.father_name}}</p>
+        <p><strong>CNIC:</strong> {{application.cnic}}</p>
+        <p><strong>Religion:</strong> {{application.religion}}</p>
+        <p><strong>Caste:</strong> {{application.caste}}</p>
+        <p><strong>Domicile:</strong> {{application.domicile}}</p>
+        <p><strong>Date of Birth:</strong> {{application.dob}}</p>
+        <p><strong>Status:</strong> <span class="status-{{application.status}}">{{application.status}}</span></p>
+    </div>
+
+    {{#if photos.length}}
+    <div class="photos-section">
+        <h2>Photos</h2>
+        <div class="photos-grid">
+            {{#each photos}}
+            <div class="photo-item">
+                <img src="/uploads/{{../application.serial_no}}/{{this}}" alt="Photo">
+                <p>{{this}}</p>
+            </div>
+            {{/each}}
+        </div>
+    </div>
+    {{/if}}
+
+    {{#if documents.length}}
+    <div class="documents-section">
+        <h2>Documents</h2>
+        <div class="documents-list">
+            {{#each documents}}
+            <div class="document-item">
+                <a href="/uploads/{{../application.serial_no}}/{{this}}" target="_blank" class="doc-link">
+                    📄 {{this}}
+                </a>
+            </div>
+            {{/each}}
+        </div>
+    </div>
+    {{/if}}
+
+    <div class="actions">
+        <a href="/" class="btn">Back to Home</a>
+    </div>
+</div>
+
+<style>
+.application-details {
+    max-width: 800px;
+    margin: 30px auto;
+    padding: 30px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.1);
+}
+
+.applicant-info {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+}
+
+.photos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin: 20px 0;
+}
+
+.photo-item img {
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+    border-radius: 5px;
+}
+
+.documents-list {
+    margin: 20px 0;
+}
+
+.document-item {
+    padding: 10px;
+    border: 1px solid #ddd;
+    margin: 5px 0;
+    border-radius: 5px;
+}
+
+.doc-link {
+    color: #007bff;
+    text-decoration: none;
+}
+
+.doc-link:hover {
+    text-decoration: underline;
+}
+
+.status-submitted {
+    color: #28a745;
+    font-weight: bold;
+}
+
+.status-pending {
+    color: #ffc107;
+    font-weight: bold;
+}
+</style>
