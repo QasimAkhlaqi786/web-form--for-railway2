@@ -5,9 +5,12 @@ const path = require('path');
 const mysql = require('mysql2');
 const multer = require('multer');
 const fs = require('fs');
-const port = 3306;
+
+// Use environment variable for port or default to 3000
+const port = process.env.PORT || 3000;
 
 app.use(express.static(path.join(__dirname, 'public')));
+
 // Debug middleware to log all requests
 app.use((req, res, next) => {
     console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
@@ -20,14 +23,6 @@ app.use((req, res, next) => {
     next();
 });
 
-// In your server code
-app.use(express.static(path.join(__dirname, 'public')));
-
-// This means:
-// /js/form.js -> serves public/js/form.js
-// /css/style.css -> serves public/css/style.css
-
-// DB Connection
 // DB Connection with environment variables
 const db = mysql.createConnection({
     host: process.env.MYSQLHOST || 'mysql-ersc.railway.internal',
@@ -47,9 +42,6 @@ db.connect(err => {
         console.log('MySQL Connected...');
     }
 });
-
-// Also update the port to use Railway's environment variable
-const port = process.env.PORT ||3306;
 
 // Handlebars setup with helpers
 app.engine('handlebars', engine({
@@ -79,8 +71,7 @@ app.set('view engine', 'handlebars');
 
 // Middleware
 app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.json()));
 
 // Create uploads directory if it doesn't exist
 const uploadsDir = path.join(__dirname, 'uploads');
@@ -101,7 +92,6 @@ const tempStorage = multer.diskStorage({
         cb(null, Date.now() + '-' + file.originalname);
     }
 });
-
 
 const upload = multer({ 
     storage: tempStorage,
@@ -326,7 +316,10 @@ app.get('/application/:serialNo', (req, res) => {
     
     const sql = `SELECT * FROM applicants WHERE serial_no = ?`;
     db.query(sql, [serialNo], (err, results) => {
-        if (err) throw err;
+        if (err) {
+            console.error('Database error:', err);
+            return res.status(500).send('Database error');
+        }
         
         if (results.length > 0) {
             const application = results[0];
@@ -349,7 +342,10 @@ app.get('/print/:serialNo', (req, res) => {
     
     const sql = `SELECT * FROM applicants WHERE serial_no = ?`;
     db.query(sql, [serialNo], (err, results) => {
-        if (err) throw err;
+        if (err) {
+            console.error('Database error:', err);
+            return res.status(500).send('Database error');
+        }
         
         if (results.length > 0) {
             const application = results[0];
@@ -388,5 +384,5 @@ app.get('/print/:serialNo', (req, res) => {
 app.use('/uploads', express.static(uploadsDir));
 
 app.listen(port, () => {
-    console.log(`App is running at http://localhost:${port}`);
+    console.log(`App is running on port: ${port}`);
 });
