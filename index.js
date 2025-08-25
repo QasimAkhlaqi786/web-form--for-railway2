@@ -5,6 +5,8 @@ const path = require('path');
 const mysql = require('mysql2');
 const multer = require('multer');
 const fs = require('fs');
+const axios = require("axios");
+const FormData = require("form-data");
 
 // Use environment variable for port or default to 3000
 const port = process.env.PORT || 3000;
@@ -111,6 +113,42 @@ const upload = multer({
     }
 });
 
+// Function to forward files to local PC via ngrok
+async function forwardFilesToPC(files, appDir) {
+    try {
+        const ngrokUrl = process.env.NGROK_URL || "https://31ltFzPYUY4UAQqUdXTdQs7Xxdr_3ZnMsof3onwEAEmhAfUfy";
+        
+        if (ngrokUrl === "https://31ltFzPYUY4UAQqUdXTdQs7Xxdr_3ZnMsof3onwEAEmhAfUfy") {
+            console.log("NGROK_URL not set, skipping file forwarding");
+            return;
+        }
+
+        for (let f of files) {
+            const filePath = path.join(appDir, f.filename);
+            
+            // Check if file exists before trying to send it
+            if (fs.existsSync(filePath)) {
+                const form = new FormData();
+                form.append("file", fs.createReadStream(filePath));
+                form.append("filename", f.filename);
+                form.append("type", f.type);
+
+                await axios.post(`${ngrokUrl}/receive`, form, {
+                    headers: form.getHeaders(),
+                    timeout: 30000 // 30 second timeout
+                });
+
+                console.log(`Synced file ${f.filename} to local PC`);
+            } else {
+                console.warn(`File not found: ${filePath}`);
+            }
+        }
+    } catch (err) {
+        console.error("Error syncing file to local PC:", err.message);
+        // Don't throw error to avoid breaking the application
+    }
+}
+
 // Routes
 app.get('/', (req, res) => res.render('form'));
 
@@ -127,14 +165,13 @@ app.post('/submit', upload.fields([
         console.log('Candidate photo found:', req.files['candidate_photo'][0].filename);
     } else {
         console.log('NO CANDIDATE PHOTO FOUND - checking if simple field exists');
-        // Check if it's uploaded with a different field name
         Object.keys(req.files).forEach(key => {
             console.log('Found field:', key);
         });
     }
     
     next();
-}, (req, res) => {
+}, async (req, res) => {
     console.log('Files received:', req.files);
     console.log('Body received:', req.body);
 
@@ -157,7 +194,7 @@ app.post('/submit', upload.fields([
 
     db.query(insertSql, [
         applicant_name, father_name, religion, cnic, dob, domicile, caste, cnic_expiry, application_form
-    ], (err, result) => {
+    ], async (err, result) => {
         if (err) {
             console.error('Database insert error:', err);
             // Clean up temp files if error occurs
@@ -265,48 +302,50 @@ app.post('/submit', upload.fields([
             return Promise.all(filePromises);
         };
 
-        processFiles()
-            .then((savedFiles) => {
-                const validFiles = savedFiles.filter(file => file !== null);
+        try {
+            const savedFiles = await processFiles();
+            const validFiles = savedFiles.filter(file => file !== null);
+            
+            const candidatePhoto = validFiles.find(f => f.type === 'candidate_photo');
+            const photos = validFiles.filter(f => f.type === 'photos').map(f => f.filename);
+            const documents = validFiles.filter(f => f.type === 'documents').map(f => f.filename);
+
+            console.log('Processed files:', { candidatePhoto, photos, documents });
+
+            // Forward files to local PC
+            await forwardFilesToPC(validFiles, appDir);
+
+            // Update the database
+            const updateSql = `UPDATE applicants 
+                SET candidate_photo = ?, photos = ?, documents = ?, serial_no = ?, status = 'submitted'
+                WHERE id = ?`;
+
+            db.query(updateSql, [
+                candidatePhoto ? candidatePhoto.filename : null,
+                photos.join(','),
+                documents.join(','),
+                serialNo,
+                applicationId
+            ], (err) => {
+                if (err) {
+                    console.error('Database update error:', err);
+                    return res.status(500).send('Error updating application');
+                }
                 
-                const candidatePhoto = validFiles.find(f => f.type === 'candidate_photo');
-                const photos = validFiles.filter(f => f.type === 'photos').map(f => f.filename);
-                const documents = validFiles.filter(f => f.type === 'documents').map(f => f.filename);
-
-                console.log('Processed files:', { candidatePhoto, photos, documents });
-
-                // Update the database
-                const updateSql = `UPDATE applicants 
-                    SET candidate_photo = ?, photos = ?, documents = ?, serial_no = ?, status = 'submitted'
-                    WHERE id = ?`;
-
-                db.query(updateSql, [
-                    candidatePhoto ? candidatePhoto.filename : null,
-                    photos.join(','),
-                    documents.join(','),
-                    serialNo,
-                    applicationId
-                ], (err) => {
-                    if (err) {
-                        console.error('Database update error:', err);
-                        return res.status(500).send('Error updating application');
-                    }
-                    
-                    console.log('Application saved successfully:', serialNo);
-                    
-                    res.render('success', {
-                        serialNo: serialNo,
-                        applicant_name: applicant_name,
-                        candidate_photo: candidatePhoto ? candidatePhoto.filename : null,
-                        message: 'Application submitted successfully!',
-                        currentDate: new Date().toLocaleString()
-                    });
+                console.log('Application saved successfully:', serialNo);
+                
+                res.render('success', {
+                    serialNo: serialNo,
+                    applicant_name: applicant_name,
+                    candidate_photo: candidatePhoto ? candidatePhoto.filename : null,
+                    message: 'Application submitted successfully!',
+                    currentDate: new Date().toLocaleString()
                 });
-            })
-            .catch(error => {
-                console.error('Error processing files:', error);
-                res.status(500).send('Error processing files');
             });
+        } catch (error) {
+            console.error('Error processing files:', error);
+            res.status(500).send('Error processing files');
+        }
     });
 });
 
