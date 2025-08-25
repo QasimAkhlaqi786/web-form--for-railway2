@@ -5,7 +5,7 @@ const path = require('path');
 const mysql = require('mysql2');
 const multer = require('multer');
 const fs = require('fs');
-const port = 3000;
+const port = 36138;
 
 app.use(express.static(path.join(__dirname, 'public')));
 // Debug middleware to log all requests
@@ -29,9 +29,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // DB Connection
 const db = mysql.createConnection({
-    host: 'localhost',
+    host: 'nozomi.proxy.rlwy.net',
     user: 'root',
-    password: '555456',
+    password: 'yLHmjSDMFoIvgZASnnffMgYyIBEgVbsC',
     database: 'applicants_db'
 });
 
