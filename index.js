@@ -71,7 +71,7 @@ app.set('view engine', 'handlebars');
 
 // Middleware
 app.use(express.urlencoded({ extended: true }));
-app.use(express.json()));
+app.use(express.json());
 
 // Create uploads directory if it doesn't exist
 const uploadsDir = path.join(__dirname, 'uploads');
