@@ -5,7 +5,7 @@ const path = require('path');
 const mysql = require('mysql2');
 const multer = require('multer');
 const fs = require('fs');
-const port = 36138;
+const port = 3306;
 
 app.use(express.static(path.join(__dirname, 'public')));
 // Debug middleware to log all requests
@@ -28,17 +28,28 @@ app.use(express.static(path.join(__dirname, 'public')));
 // /css/style.css -> serves public/css/style.css
 
 // DB Connection
+// DB Connection with environment variables
 const db = mysql.createConnection({
-    host: 'nozomi.proxy.rlwy.net',
-    user: 'root',
-    password: 'yLHmjSDMFoIvgZASnnffMgYyIBEgVbsC',
-    database: 'applicants_db'
+    host: process.env.MYSQLHOST || 'mysql-ersc.railway.internal',
+    port: process.env.MYSQLPORT || 3306,
+    user: process.env.MYSQLUSER || 'root',
+    password: process.env.MYSQLPASSWORD || 'yLHmjSDMFoIvgZASnnffMgYyIBEgVbsC',
+    database: process.env.MYSQLDATABASE || 'applicants_db'
 });
 
+// Handle connection with error handling
 db.connect(err => {
-    if (err) throw err;
-    console.log('MySQL Connected...');
+    if (err) {
+        console.error('MySQL connection error:', err);
+        // Don't throw error, just log it - this allows the app to start
+        // and attempt to reconnect or handle DB-less operation
+    } else {
+        console.log('MySQL Connected...');
+    }
 });
+
+// Also update the port to use Railway's environment variable
+const port = process.env.PORT ||3306;
 
 // Handlebars setup with helpers
 app.engine('handlebars', engine({
