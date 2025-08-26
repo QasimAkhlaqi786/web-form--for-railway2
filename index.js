@@ -25,30 +25,32 @@ app.use((req, res, next) => {
 });
 
 // DB Connection - Use Railway's environment variables
-const db = mysql.createPool({
-    connectionLimit: 10,
-    host: process.env.MYSQLHOST || 'mysql-ersc.railway.internal',
-    port: process.env.MYSQLPORT || 3306,
-    user: process.env.MYSQLUSER || 'root',
-    password: process.env.MYSQLPASSWORD || 'yLHmjSDMFoIvgZASnnffMgYyIBEgVbsC',
-    database: process.env.MYSQLDATABASE || 'applicants_db'
-});
+// function to run queries with a fresh connection each time
+function runQuery(query, params = []) {
+  return new Promise((resolve, reject) => {
+    const db = mysql.createConnection({
+      host: process.env.MYSQLHOST || "mysql-ersc.railway.internal",
+      port: process.env.MYSQLPORT || 3306,
+      user: process.env.MYSQLUSER || "root",
+      password: process.env.MYSQLPASSWORD || "yLHmjSDMFoIvgZASnnffMgYyIBEgVbsC",
+      database: process.env.MYSQLDATABASE || "applicants_db",
+    });
 
-// Test connection with better error handling
-db.getConnection((err, connection) => {
-    if (err) {
-        console.error('MySQL connection error:', err);
-        console.error('Connection details:', {
-            host: process.env.MYSQLHOST,
-            port: process.env.MYSQLPORT,
-            user: process.env.MYSQLUSER,
-            database: process.env.MYSQLDATABASE
-        });
-    } else {
-        console.log('MySQL Connected successfully to database:', process.env.MYSQLDATABASE);
-        connection.release();
-    }
-});
+    // connect
+    db.connect((err) => {
+      if (err) return reject("MySQL connection error: " + err.message);
+
+      // run query
+      db.query(query, params, (err, results) => {
+        // always close after query
+        db.end();
+
+        if (err) return reject("Query error: " + err.message);
+        resolve(results);
+      });
+    });
+  });
+}
 
 // Handlebars setup
 app.engine('handlebars', engine({
