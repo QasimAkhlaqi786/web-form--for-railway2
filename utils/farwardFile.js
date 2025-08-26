@@ -4,7 +4,7 @@ const fs = require("fs");
 const path = require("path");
 
 // ngrok URL from your local PC
-const LOCAL_FORWARD_URL = "https://<your-ngrok-id>.ngrok.io/receive";
+const LOCAL_FORWARD_URL = "https://33d5859621a6.ngrok-free.app -> http://localhost:3000";
 
 async function forwardFile(filePath) {
     try {
