@@ -27,7 +27,7 @@ app.use((req, res, next) => {
 // DB Connection - Use Railway's environment variables
 const db = mysql.createPool({
     connectionLimit: 10,
-    host: process.env.MYSQLHOST || 'localhost',
+    host: process.env.MYSQLHOST || 'mysql-ersc.railway.internal',
     port: process.env.MYSQLPORT || 3306,
     user: process.env.MYSQLUSER || 'root',
     password: process.env.MYSQLPASSWORD || 'yLHmjSDMFoIvgZASnnffMgYyIBEgVbsC',
