@@ -5,7 +5,7 @@ const path = require('path');
 const mysql = require('mysql2');
 const multer = require('multer');
 const fs = require('fs');
-const port = 3000;
+const port = 36138;
 
 app.use(express.static(path.join(__dirname, 'public')));
 // Debug middleware to log all requests
@@ -31,7 +31,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 const db = mysql.createPool({
     connectionLimit: 10, // number of simultaneous connections
     host: process.env.MYSQLHOST || 'mysql-ersc.railway.internal',
-    port: process.env.MYSQLPORT || 3306,
+    port: process.env.MYSQLPORT || 36138,
     user: process.env.MYSQLUSER || 'root',
     password: process.env.MYSQLPASSWORD || 'yLHmjSDMFoIvgZASnnffMgYyIBEgVbsC',
     database: process.env.MYSQLDATABASE || 'applicants_db'
