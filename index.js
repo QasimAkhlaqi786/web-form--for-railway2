@@ -28,16 +28,23 @@ app.use(express.static(path.join(__dirname, 'public')));
 // /css/style.css -> serves public/css/style.css
 
 // DB Connection
-const db = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: '555456',
-    database: 'applicants_db'
+const db = mysql.createPool({
+    connectionLimit: 10, // number of simultaneous connections
+    host: process.env.MYSQLHOST || 'mysql-ersc.railway.internal',
+    port: process.env.MYSQLPORT || 3306,
+    user: process.env.MYSQLUSER || 'root',
+    password: process.env.MYSQLPASSWORD || 'yLHmjSDMFoIvgZASnnffMgYyIBEgVbsC',
+    database: process.env.MYSQLDATABASE || 'applicants_db'
 });
 
-db.connect(err => {
-    if (err) throw err;
-    console.log('MySQL Connected...');
+// Test connection
+db.getConnection((err, connection) => {
+    if (err) {
+        console.error('MySQL connection error:', err);
+    } else {
+        console.log('MySQL Connected...');
+        connection.release(); // release back to pool
+    }
 });
 
 // Handlebars setup with helpers
