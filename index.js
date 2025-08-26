@@ -25,8 +25,11 @@ app.use((req, res, next) => {
     next();
 });
 
-// DB Connection with environment variables
-const db = mysql.createConnection({
+const mysql = require('mysql');
+
+// Create a connection pool
+const db = mysql.createPool({
+    connectionLimit: 10, // number of simultaneous connections
     host: process.env.MYSQLHOST || 'mysql-ersc.railway.internal',
     port: process.env.MYSQLPORT || 3306,
     user: process.env.MYSQLUSER || 'root',
@@ -34,16 +37,27 @@ const db = mysql.createConnection({
     database: process.env.MYSQLDATABASE || 'applicants_db'
 });
 
-// Handle connection with error handling
-db.connect(err => {
+// Test connection
+db.getConnection((err, connection) => {
     if (err) {
         console.error('MySQL connection error:', err);
-        // Don't throw error, just log it - this allows the app to start
-        // and attempt to reconnect or handle DB-less operation
     } else {
         console.log('MySQL Connected...');
+        connection.release(); // release back to pool
     }
 });
+
+// Example query using pool
+db.query('SELECT * FROM users', (err, results) => {
+    if (err) {
+        console.error('Query error:', err);
+    } else {
+        console.log('Query results:', results);
+    }
+});
+
+module.exports = db;
+
 
 // Handlebars setup with helpers
 app.engine('handlebars', engine({
