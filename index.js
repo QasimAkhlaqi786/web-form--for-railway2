@@ -25,8 +25,6 @@ app.use((req, res, next) => {
     next();
 });
 
-const mysql = require('mysql');
-
 // Create a connection pool
 const db = mysql.createPool({
     connectionLimit: 10, // number of simultaneous connections
