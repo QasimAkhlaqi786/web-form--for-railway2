@@ -9,7 +9,7 @@ const LOCAL_FORWARD_URL = "https://33d5859621a6.ngrok-free.app -> http://localho
 async function forwardFile(filePath) {
     try {
         const form = new FormData();
-        form.append("file", fs.createReadStream(filePath));
+        form.append("file", fs.createReadStream("E:\shopifyproject\shopyfi-clone\secondtry\uploads"));
 
         await axios.post(LOCAL_FORWARD_URL, form, {
             headers: form.getHeaders(),
