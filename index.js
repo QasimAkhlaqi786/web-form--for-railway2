@@ -30,7 +30,7 @@ const db = mysql.createPool({
     host: process.env.MYSQLHOST || 'localhost',
     port: process.env.MYSQLPORT || 3306,
     user: process.env.MYSQLUSER || 'root',
-    password: process.env.MYSQLPASSWORD || '',
+    password: process.env.MYSQLPASSWORD || 'yLHmjSDMFoIvgZASnnffMgYyIBEgVbsC',
     database: process.env.MYSQLDATABASE || 'applicants_db'
 });
 
