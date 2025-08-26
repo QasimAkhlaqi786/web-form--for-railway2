@@ -4,7 +4,9 @@
   "main": "index.js",
   "scripts": {
     "start": "node index",
-    "dev": "nodemon index"
+    "dev": "nodemon index",
+    "install-prod": "npm install --omit=dev",
+    "prod": "npm run install-prod && npm start"
   },
   "keywords": [],
   "author": "",
