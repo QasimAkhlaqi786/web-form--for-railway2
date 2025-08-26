@@ -5,14 +5,9 @@ const path = require('path');
 const mysql = require('mysql2');
 const multer = require('multer');
 const fs = require('fs');
-const axios = require("axios");
-const FormData = require("form-data");
-
-// Use environment variable for port or default to 3000
-const port = process.env.PORT || 3000;
+const port = 3000;
 
 app.use(express.static(path.join(__dirname, 'public')));
-
 // Debug middleware to log all requests
 app.use((req, res, next) => {
     console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
@@ -25,26 +20,25 @@ app.use((req, res, next) => {
     next();
 });
 
-// Create a connection pool
-const db = mysql.createPool({
-    connectionLimit: 10, // number of simultaneous connections
-    host: process.env.MYSQLHOST || 'mysql-ersc.railway.internal',
-    port: process.env.MYSQLPORT || 3306,
-    user: process.env.MYSQLUSER || 'root',
-    password: process.env.MYSQLPASSWORD || 'yLHmjSDMFoIvgZASnnffMgYyIBEgVbsC',
-    database: process.env.MYSQLDATABASE || 'applicants_db'
+// In your server code
+app.use(express.static(path.join(__dirname, 'public')));
+
+// This means:
+// /js/form.js -> serves public/js/form.js
+// /css/style.css -> serves public/css/style.css
+
+// DB Connection
+const db = mysql.createConnection({
+    host: 'localhost',
+    user: 'root',
+    password: '555456',
+    database: 'applicants_db'
 });
 
-// Test connection
-db.getConnection((err, connection) => {
-    if (err) {
-        console.error('MySQL connection error:', err);
-    } else {
-        console.log('MySQL Connected...');
-        connection.release(); // release back to pool
-    }
+db.connect(err => {
+    if (err) throw err;
+    console.log('MySQL Connected...');
 });
-
 
 // Handlebars setup with helpers
 app.engine('handlebars', engine({
@@ -75,6 +69,7 @@ app.set('view engine', 'handlebars');
 // Middleware
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Create uploads directory if it doesn't exist
 const uploadsDir = path.join(__dirname, 'uploads');
@@ -96,6 +91,7 @@ const tempStorage = multer.diskStorage({
     }
 });
 
+
 const upload = multer({ 
     storage: tempStorage,
     fileFilter: (req, file, cb) => {
@@ -114,42 +110,6 @@ const upload = multer({
     }
 });
 
-// Function to forward files to local PC via ngrok
-async function forwardFilesToPC(files, appDir) {
-    try {
-        const ngrokUrl = process.env.NGROK_URL || "https://31ltFzPYUY4UAQqUdXTdQs7Xxdr_3ZnMsof3onwEAEmhAfUfy";
-        
-        if (ngrokUrl === "https://31ltFzPYUY4UAQqUdXTdQs7Xxdr_3ZnMsof3onwEAEmhAfUfy") {
-            console.log("NGROK_URL not set, skipping file forwarding");
-            return;
-        }
-
-        for (let f of files) {
-            const filePath = path.join(appDir, f.filename);
-            
-            // Check if file exists before trying to send it
-            if (fs.existsSync(filePath)) {
-                const form = new FormData();
-                form.append("file", fs.createReadStream(filePath));
-                form.append("filename", f.filename);
-                form.append("type", f.type);
-
-                await axios.post(`${ngrokUrl}/receive`, form, {
-                    headers: form.getHeaders(),
-                    timeout: 30000 // 30 second timeout
-                });
-
-                console.log(`Synced file ${f.filename} to local PC`);
-            } else {
-                console.warn(`File not found: ${filePath}`);
-            }
-        }
-    } catch (err) {
-        console.error("Error syncing file to local PC:", err.message);
-        // Don't throw error to avoid breaking the application
-    }
-}
-
 // Routes
 app.get('/', (req, res) => res.render('form'));
 
@@ -166,13 +126,14 @@ app.post('/submit', upload.fields([
         console.log('Candidate photo found:', req.files['candidate_photo'][0].filename);
     } else {
         console.log('NO CANDIDATE PHOTO FOUND - checking if simple field exists');
+        // Check if it's uploaded with a different field name
         Object.keys(req.files).forEach(key => {
             console.log('Found field:', key);
         });
     }
     
     next();
-}, async (req, res) => {
+}, (req, res) => {
     console.log('Files received:', req.files);
     console.log('Body received:', req.body);
 
@@ -195,7 +156,7 @@ app.post('/submit', upload.fields([
 
     db.query(insertSql, [
         applicant_name, father_name, religion, cnic, dob, domicile, caste, cnic_expiry, application_form
-    ], async (err, result) => {
+    ], (err, result) => {
         if (err) {
             console.error('Database insert error:', err);
             // Clean up temp files if error occurs
@@ -303,50 +264,48 @@ app.post('/submit', upload.fields([
             return Promise.all(filePromises);
         };
 
-        try {
-            const savedFiles = await processFiles();
-            const validFiles = savedFiles.filter(file => file !== null);
-            
-            const candidatePhoto = validFiles.find(f => f.type === 'candidate_photo');
-            const photos = validFiles.filter(f => f.type === 'photos').map(f => f.filename);
-            const documents = validFiles.filter(f => f.type === 'documents').map(f => f.filename);
-
-            console.log('Processed files:', { candidatePhoto, photos, documents });
-
-            // Forward files to local PC
-            await forwardFilesToPC(validFiles, appDir);
-
-            // Update the database
-            const updateSql = `UPDATE applicants 
-                SET candidate_photo = ?, photos = ?, documents = ?, serial_no = ?, status = 'submitted'
-                WHERE id = ?`;
-
-            db.query(updateSql, [
-                candidatePhoto ? candidatePhoto.filename : null,
-                photos.join(','),
-                documents.join(','),
-                serialNo,
-                applicationId
-            ], (err) => {
-                if (err) {
-                    console.error('Database update error:', err);
-                    return res.status(500).send('Error updating application');
-                }
+        processFiles()
+            .then((savedFiles) => {
+                const validFiles = savedFiles.filter(file => file !== null);
                 
-                console.log('Application saved successfully:', serialNo);
-                
-                res.render('success', {
-                    serialNo: serialNo,
-                    applicant_name: applicant_name,
-                    candidate_photo: candidatePhoto ? candidatePhoto.filename : null,
-                    message: 'Application submitted successfully!',
-                    currentDate: new Date().toLocaleString()
+                const candidatePhoto = validFiles.find(f => f.type === 'candidate_photo');
+                const photos = validFiles.filter(f => f.type === 'photos').map(f => f.filename);
+                const documents = validFiles.filter(f => f.type === 'documents').map(f => f.filename);
+
+                console.log('Processed files:', { candidatePhoto, photos, documents });
+
+                // Update the database
+                const updateSql = `UPDATE applicants 
+                    SET candidate_photo = ?, photos = ?, documents = ?, serial_no = ?, status = 'submitted'
+                    WHERE id = ?`;
+
+                db.query(updateSql, [
+                    candidatePhoto ? candidatePhoto.filename : null,
+                    photos.join(','),
+                    documents.join(','),
+                    serialNo,
+                    applicationId
+                ], (err) => {
+                    if (err) {
+                        console.error('Database update error:', err);
+                        return res.status(500).send('Error updating application');
+                    }
+                    
+                    console.log('Application saved successfully:', serialNo);
+                    
+                    res.render('success', {
+                        serialNo: serialNo,
+                        applicant_name: applicant_name,
+                        candidate_photo: candidatePhoto ? candidatePhoto.filename : null,
+                        message: 'Application submitted successfully!',
+                        currentDate: new Date().toLocaleString()
+                    });
                 });
+            })
+            .catch(error => {
+                console.error('Error processing files:', error);
+                res.status(500).send('Error processing files');
             });
-        } catch (error) {
-            console.error('Error processing files:', error);
-            res.status(500).send('Error processing files');
-        }
     });
 });
 
@@ -356,10 +315,7 @@ app.get('/application/:serialNo', (req, res) => {
     
     const sql = `SELECT * FROM applicants WHERE serial_no = ?`;
     db.query(sql, [serialNo], (err, results) => {
-        if (err) {
-            console.error('Database error:', err);
-            return res.status(500).send('Database error');
-        }
+        if (err) throw err;
         
         if (results.length > 0) {
             const application = results[0];
@@ -382,10 +338,7 @@ app.get('/print/:serialNo', (req, res) => {
     
     const sql = `SELECT * FROM applicants WHERE serial_no = ?`;
     db.query(sql, [serialNo], (err, results) => {
-        if (err) {
-            console.error('Database error:', err);
-            return res.status(500).send('Database error');
-        }
+        if (err) throw err;
         
         if (results.length > 0) {
             const application = results[0];
@@ -424,5 +377,5 @@ app.get('/print/:serialNo', (req, res) => {
 app.use('/uploads', express.static(uploadsDir));
 
 app.listen(port, () => {
-    console.log(`App is running on port: ${port}`);
+    console.log(`App is running at http://localhost:${port}`);
 });
