@@ -47,17 +47,6 @@ db.getConnection((err, connection) => {
     }
 });
 
-// Example query using pool
-db.query('SELECT * FROM users', (err, results) => {
-    if (err) {
-        console.error('Query error:', err);
-    } else {
-        console.log('Query results:', results);
-    }
-});
-
-module.exports = db;
-
 
 // Handlebars setup with helpers
 app.engine('handlebars', engine({
